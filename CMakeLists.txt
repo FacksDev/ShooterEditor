@@ -10,8 +10,8 @@ add_subdirectory(StraitXPackages/imgui)
 add_subdirectory(StraitXPackages/2d)
 
 set(EDITOR_SOURCES
-	
+	Main.cpp
 )
 
-add_executable(ShooterEditor ${RED_SOURCES})
+add_executable(ShooterEditor ${EDITOR_SOURCES})
 target_link_libraries(ShooterEditor StraitXBase StraitXImGui StraitX2D)
