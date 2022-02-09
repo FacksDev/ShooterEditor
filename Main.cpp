@@ -1,10 +1,11 @@
-#include <core/span.hpp>
 #include <core/print.hpp>
+#include <core/list.hpp>
 #include <core/os/window.hpp>
 #include <core/os/clock.hpp>
 #include <graphics/api/swapchain.hpp>
 #include <imgui/backend.hpp>
 #include <imgui/widgets.hpp>
+#include <string>
 
 struct AutoWindow: Window{
     
@@ -19,9 +20,10 @@ struct AutoWindow: Window{
 
 class Editor {
 private:
-    AutoWindow m_Window{640, 480, "Shit"};
+    AutoWindow m_Window{1280, 720, "Shit"};
     FramebufferChain m_Swapchain{&m_Window};
     ImGuiBackend m_Backend{m_Swapchain.Pass()};
+    List<std::string> m_List;
 public:
 
     Editor() {
@@ -67,7 +69,15 @@ public:
         flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
   
         ImGui::Begin("Window", nullptr, flags);
-        ImGui::ColorPicker4("Color", color);
+        for (const auto& string : m_List) 
+            ImGui::Text(string.c_str());
+
+        static char s_Buffer[256] = {};
+        ImGui::InputText("ToAdd", s_Buffer, sizeof(s_Buffer));
+        if (ImGui::Button("Add")) {
+            m_List.Add(s_Buffer);
+            s_Buffer[0] = 0;
+        }
         ImGui::End();
 
         ImGui::Begin("Text Window");
