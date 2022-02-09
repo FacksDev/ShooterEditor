@@ -1,0 +1,12 @@
+[submodule "Shooter"]
+	path = Shooter
+	url = https://github.com/Lorrami/Shooter.git
+[submodule "StraitXPackages/base"]
+	path = StraitXPackages/base
+	url = https://github.com/straitx/base
+[submodule "StraitXPackages/imgui"]
+	path = StraitXPackages/imgui
+	url = https://github.com/straitx/imgui
+[submodule "StraitXPackages/2d"]
+	path = StraitXPackages/2d
+	url = https://github.com/straitx/2d
