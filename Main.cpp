@@ -49,8 +49,7 @@ public:
         Semaphore acquire, present;
 
         while (m_Window.IsOpen()) {
-            float dt = cl.GetElapsedTime().AsSeconds();
-            cl.Restart();
+            float dt = cl.Restart().AsSeconds();
             
             m_Backend.NewFrame(dt, Mouse::RelativePosition(m_Window), m_Window.Size());
             Draw();
