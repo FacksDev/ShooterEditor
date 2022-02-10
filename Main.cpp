@@ -1,22 +1,12 @@
 #include <core/print.hpp>
 #include <core/list.hpp>
-#include <core/os/window.hpp>
 #include <core/os/clock.hpp>
 #include <core/unique_ptr.hpp>
-#include <graphics/api/swapchain.hpp>
 #include <imgui/backend.hpp>
 #include <imgui/widgets.hpp>
+#include <graphics/render_window.hpp>
 #include <string>
 
-struct AutoWindow: Window{
-    AutoWindow(int width, int height, const char* title) {
-        Open(width, height, title);
-    }
-
-    ~AutoWindow() {
-        Close();
-    }
-};
 
 namespace ImGui{
     void AutoDockSpace(Vector2f window_size){
@@ -43,9 +33,8 @@ namespace ImGui{
 
 class Editor {
 private:
-    AutoWindow m_Window{1280, 720, "Shit"};
-    FramebufferChain m_Swapchain{&m_Window};
-    ImGuiBackend m_Backend{m_Swapchain.Pass()};
+    RenderWindow m_Window{1280, 720, "Shit"};
+    ImGuiBackend m_Backend{m_Window.FramebufferPass()};
     UniquePtr<Texture2D> m_Texture{Texture2D::Create(1, 1, TextureFormat::RGBA8, TextureUsageBits::Sampled | TextureUsageBits::TransferDst, TextureLayout::ShaderReadOnlyOptimal)};
 public:
 
@@ -60,17 +49,17 @@ public:
         Semaphore acquire, present;
 
         while (m_Window.IsOpen()) {
-            m_Window.DispatchEvents();
-
             float dt = cl.GetElapsedTime().AsSeconds();
             cl.Restart();
             
             m_Backend.NewFrame(dt, Mouse::RelativePosition(m_Window), m_Window.Size());
             Draw();
 
-            m_Swapchain.AcquireNext(&acquire);
-            m_Backend.RenderFrame(m_Swapchain.CurrentFramebuffer(), &acquire, &present);
-            m_Swapchain.PresentCurrent(&present);
+            m_Window.AcquireNextFramebuffer(&acquire);
+            m_Backend.RenderFrame(m_Window.CurrentFramebuffer(), &acquire, &present);
+            m_Window.PresentCurrentFramebuffer(&present);
+
+            m_Window.DispatchEvents();
         }
     }
 
