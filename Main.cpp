@@ -2,13 +2,13 @@
 #include <core/list.hpp>
 #include <core/os/window.hpp>
 #include <core/os/clock.hpp>
+#include <core/unique_ptr.hpp>
 #include <graphics/api/swapchain.hpp>
 #include <imgui/backend.hpp>
 #include <imgui/widgets.hpp>
 #include <string>
 
 struct AutoWindow: Window{
-    
     AutoWindow(int width, int height, const char* title) {
         Open(width, height, title);
     }
@@ -18,18 +18,41 @@ struct AutoWindow: Window{
     }
 };
 
+namespace ImGui{
+    void AutoDockSpace(Vector2f window_size){
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+        ImGui::SetNextWindowSize(ImVec2(window_size.x, window_size.y));
+        ImGui::SetNextWindowPos({0, 0});
+        ImGuiWindowFlags flags = 0;
+        flags |= ImGuiWindowFlags_NoTitleBar;
+        flags |= ImGuiWindowFlags_NoResize;
+        flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+        flags |= ImGuiWindowFlags_NoMove;
+
+        ImGui::Begin("DockWindow", nullptr, flags);
+        {
+            ImGui::DockSpace(ImGui::GetID("Dockspace"));
+        }
+        ImGui::End();
+
+        ImGui::PopStyleVar(2);
+    }
+}
+
 class Editor {
 private:
     AutoWindow m_Window{1280, 720, "Shit"};
     FramebufferChain m_Swapchain{&m_Window};
     ImGuiBackend m_Backend{m_Swapchain.Pass()};
-    List<std::string> m_List;
+    UniquePtr<Texture2D> m_Texture{Texture2D::Create(1, 1, TextureFormat::RGBA8, TextureUsageBits::Sampled | TextureUsageBits::TransferDst, TextureLayout::ShaderReadOnlyOptimal)};
 public:
 
     Editor() {
-        Function<void(const Event &)> handler;
-        handler.Bind<Editor, &Editor::OnEvent>(this);
-        m_Window.SetEventsHanlder(handler);
+        m_Window.SetEventsHanlder({ this, &Editor::OnEvent });
+        u32 white = 0xFFFFFFFF;
+        m_Texture->Copy(&white, {1, 1});
     }
 
     void Run() {
@@ -42,11 +65,11 @@ public:
             float dt = cl.GetElapsedTime().AsSeconds();
             cl.Restart();
             
-            m_Swapchain.AcquireNext(&acquire);
             m_Backend.NewFrame(dt, Mouse::RelativePosition(m_Window), m_Window.Size());
             Draw();
-            m_Backend.RenderFrame(m_Swapchain.CurrentFramebuffer(), &acquire, &present);
 
+            m_Swapchain.AcquireNext(&acquire);
+            m_Backend.RenderFrame(m_Swapchain.CurrentFramebuffer(), &acquire, &present);
             m_Swapchain.PresentCurrent(&present);
         }
     }
@@ -58,26 +81,11 @@ public:
     }
 
     void Draw() {
-        static float color[4];
-        ImGui::SetNextWindowPos(ImVec2(0,0));
-        ImGui::SetNextWindowSize(ImVec2(m_Window.Size().x, m_Window.Size().y));
-        ImGuiWindowFlags flags = 0;
-        flags |= ImGuiWindowFlags_NoTitleBar;
-		flags |= ImGuiWindowFlags_NoResize;
-		flags |= ImGuiWindowFlags_NoMove;
-		flags |= ImGuiWindowFlags_NoCollapse;
-        flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+        ImGui::AutoDockSpace(m_Window.Size());
+        ImGui::ShowDemoWindow();
   
-        ImGui::Begin("Window", nullptr, flags);
-        for (const auto& string : m_List) 
-            ImGui::Text(string.c_str());
+        ImGui::Begin("EditorWindow");
 
-        static char s_Buffer[256] = {};
-        ImGui::InputText("ToAdd", s_Buffer, sizeof(s_Buffer));
-        if (ImGui::Button("Add")) {
-            m_List.Add(s_Buffer);
-            s_Buffer[0] = 0;
-        }
         ImGui::End();
 
         ImGui::Begin("Text Window");
